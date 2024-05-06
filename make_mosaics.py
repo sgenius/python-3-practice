@@ -1,4 +1,6 @@
 import os
+import math
+import sys
 from PIL import Image
 
 def get_source_filenames(base_x=0,
@@ -58,12 +60,12 @@ def make_layer_cell(
     scale_x=2,
     scale_y=2,
     layer=1,
-    output_width=0,
-    output_height=0,
     min_x=0,
     max_x=1,
     min_y=0,
     max_y=1,
+    output_width=0,
+    output_height=0,
     reverse_y=True,
 ):
     """Creates a single layer cell file
@@ -71,7 +73,7 @@ def make_layer_cell(
     # ensure we have an width and height for the output image
     if output_width == 0 or output_height == 0:
         # use the width and height of the first file
-        sample_file = Image.open(input_path + '/' + get_source_filename(base_x, base_y))
+        sample_file = Image.open(f"{input_path}/{get_source_filename(base_x, base_y)}")
         output_width, output_height = sample_file.size
 
     # create the blank output image
@@ -111,5 +113,62 @@ def make_layer_cell(
     # write result to disk; for now, assume the output layer exists
     result.save(f"{output_path}/{layer}/{get_layer_cell_filename(base_x, base_y, scale_x, scale_y, layer)}")
 
+def get_edges(
+    input_path='./originals'
+):
+    """
+        Gets the minimum and maximum coordinates available in the original tiles
+    """
+    # https://stackoverflow.com/questions/7604966/maximum-and-minimum-values-for-ints
+    min_x = sys.maxsize
+    min_y = sys.maxsize
+    max_x = -sys.maxsize
+    max_y = -sys.maxsize
+
+    for root, dirs, files in os.walk(input_path):
+        for file in files:
+            try:
+                coords1 = file.split(',')
+                coords2 = coords1[1].split('.')
+                print(f"{coords1}; {coords2}")
+
+                coord_x = int(coords1[0])
+                coord_y = int(coords2[1])
+                print(f"{coord_x}, {coord_y}")
+
+                min_x = coord_x if coord_x < min_x else min_x
+                max_x = coord_x if coord_x > max_x else max_x
+                min_y = coord_y if coord_y < min_y else min_y
+                max_y = coord_y if coord_y > max_y else max_y
+            except ValueError:
+                continue
+            except IndexError:
+                continue
+    return ((min_x, min_y), (max_x, max_y))
+
+def make_layer(
+    input_path='./originals',
+    output_path='./layers',
+    scale_x=2,
+    scale_y=2,
+    layer=1,
+    output_width=0,
+    output_height=0,
+    reverse_y=True,
+):
+    """
+        Creates a whole layer out of original cells
+    """
+    ((min_x, min_y), (max_x, max_y)) = get_edges(input_path)
+    step_x = int(scale_x ** layer)
+    step_y = int(scale_y ** layer)
+
+    print(f"min_x: {min_x}, min_y: {min_y}, max_x: {max_x}, max_y: {max_y}")
+    print(f"step_x: {step_x}, step_y: {step_y}")
+
+    for x in range(min_x, max_x, step_x):
+        for y in range(min_y, max_y, step_y):
+            make_layer_cell(input_path, output_path, x, y, scale_x, scale_y, layer, min_x, max_x, min_y, max_y, output_width, output_height, reverse_y)
+
 if __name__ == '__main__':
-    make_layer_cell()
+    make_layer()
