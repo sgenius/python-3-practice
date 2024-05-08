@@ -27,22 +27,6 @@ def get_source_filename(x=0,
     """
     return f"{prefix}{x},{y}.jpg"
 
-# def get_verified_source_filenames(path='./originals',
-#                                   base_x=0,
-#                                   base_y=0,
-#                                   scale_x=2,
-#                                   scale_y=2,
-#                                   layer=1):
-#     """Get the existing base files for a cell
-#     """
-#     file_list = []
-#     wanted_filenames = get_source_filenames(base_x, base_y, scale_x, scale_y, layer)
-#     for root, dirs, files in os.walk(path):
-#         for file in files:
-#             if file in wanted_filenames:
-#                 file_list.append(file)
-#     return file_list
-
 def get_layer_cell_filename(
     base_x=0,
     base_y=0,
