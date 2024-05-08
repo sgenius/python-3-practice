@@ -1,5 +1,4 @@
 import os
-import math
 import sys
 from PIL import Image
 
@@ -9,7 +8,8 @@ def get_source_filenames(base_x=0,
                          scale_y=2,
                          layer=1,
                          prefix=''):
-    """Get possible filenames for base.
+    """
+        Get possible filenames for base.
     """
     filename_list = []
     if scale_x <= 0 or scale_y <= 0 or layer < 1:
@@ -22,7 +22,8 @@ def get_source_filenames(base_x=0,
 def get_source_filename(x=0,
                         y=0,
                         prefix=''):
-    """Get filename for a base cell.
+    """
+        Get filename for a base cell.
     """
     return f"{prefix}{x},{y}.jpg"
 
@@ -52,6 +53,20 @@ def get_layer_cell_filename(
 ):
     return f"{prefix}l{layer}x{scale_x}y{scale_y}-{base_x},{base_y}.jpg"
 
+def get_base_dimensions(
+    input_path='./originals',
+    filename='.jpg',
+):
+    """
+        Gets the first image file from the directory matching the "filename" suffix
+        and returns its dimensions.
+    """
+    for root, dirs, files in os.walk(input_path):
+        for file in files:
+            if file.endswith(filename):
+                image = Image.open(f"{input_path}/{file}")
+                return image.size
+
 def make_layer_cell(
     input_path='./originals',
     output_path='./layers',
@@ -68,7 +83,8 @@ def make_layer_cell(
     output_height=0,
     reverse_y=True,
 ):
-    """Creates a single layer cell file
+    """
+        Creates a single layer cell file
     """
     # ensure we have an width and height for the output image
     if output_width == 0 or output_height == 0:
@@ -93,25 +109,25 @@ def make_layer_cell(
             max([min_y, base_y]),
             min([max_y + 1, base_y + (scale_y ** layer)])
         ):
-            # get the file
-            source_file = Image.open(f"{input_path}/{get_source_filename(x, y)}")
+            try:
+                # get the file
+                source_file = Image.open(f"{input_path}/{get_source_filename(x, y)}")
 
-            print(f"source file: {source_file}")
+                # resize to right size as per scale
+                resized_file = source_file.resize((resized_width, resized_height), Image.BOX)
 
-            # resize to right size as per scale
-            resized_file = source_file.resize((resized_width, resized_height), Image.BOX)
-
-            # paste on canvas
-            result.paste(resized_file, (x_on_canvas, y_on_canvas))
-
-            y_on_canvas = y_on_canvas - resized_height if reverse_y else y_on_canvas + resized_height
+                # paste on canvas
+                result.paste(resized_file, (x_on_canvas, y_on_canvas))
+                y_on_canvas = y_on_canvas - resized_height if reverse_y else y_on_canvas + resized_height
+            except FileNotFoundError:
+                continue
 
         x_on_canvas = x_on_canvas + resized_width
 
-    result.show()
-
     # write result to disk; for now, assume the output layer exists
-    result.save(f"{output_path}/{layer}/{get_layer_cell_filename(base_x, base_y, scale_x, scale_y, layer)}")
+    layer_cell_filename = get_layer_cell_filename(base_x, base_y, scale_x, scale_y, layer)
+    print(f">> Writing: {output_path}/{layer}/{layer_cell_filename}")
+    result.save(f"{output_path}/{layer}/{layer_cell_filename}")
 
 def get_edges(
     input_path='./originals'
@@ -130,11 +146,9 @@ def get_edges(
             try:
                 coords1 = file.split(',')
                 coords2 = coords1[1].split('.')
-                print(f"{coords1}; {coords2}")
 
                 coord_x = int(coords1[0])
-                coord_y = int(coords2[1])
-                print(f"{coord_x}, {coord_y}")
+                coord_y = int(coords2[0])
 
                 min_x = coord_x if coord_x < min_x else min_x
                 max_x = coord_x if coord_x > max_x else max_x
@@ -145,6 +159,20 @@ def get_edges(
             except IndexError:
                 continue
     return ((min_x, min_y), (max_x, max_y))
+
+def ensure_base_dimensions(
+    output_width = 0,
+    output_height = 0,
+    input_path = './originals'
+):
+    if output_width == 0 or output_height == 0:
+        base_dimensions = get_base_dimensions(input_path, '0,0.jpg')
+        if (base_dimensions == None):
+            print("Cannot get base dimensions")
+            return
+        (output_width, output_height) = base_dimensions
+        print(f"base dimensions: {base_dimensions}")
+    return (output_width, output_height)
 
 def make_layer(
     input_path='./originals',
@@ -163,12 +191,33 @@ def make_layer(
     step_x = int(scale_x ** layer)
     step_y = int(scale_y ** layer)
 
-    print(f"min_x: {min_x}, min_y: {min_y}, max_x: {max_x}, max_y: {max_y}")
-    print(f"step_x: {step_x}, step_y: {step_y}")
+    # get output dimensions
+    (output_width, output_height) = ensure_base_dimensions(output_width, output_height, input_path)
 
     for x in range(min_x, max_x, step_x):
         for y in range(min_y, max_y, step_y):
             make_layer_cell(input_path, output_path, x, y, scale_x, scale_y, layer, min_x, max_x, min_y, max_y, output_width, output_height, reverse_y)
 
+def make_layers(
+    input_path='./originals',
+    output_path='./layers',
+    scale_x=2,
+    scale_y=2,
+    output_width=0,
+    output_height=0,
+    reverse_y=True,
+    min_layer=1,
+    max_layer=6,
+):
+    """
+        Create a number of layers.
+    """
+    # get output dimensions
+    (output_width, output_height) = ensure_base_dimensions(output_width, output_height, input_path)
+
+    for layer in range(min_layer, max_layer):
+        print(f"> Creating layer {layer}.")
+        make_layer(input_path, output_path, scale_x, scale_y, layer, output_width, output_height, reverse_y)
+
 if __name__ == '__main__':
-    make_layer()
+    make_layer(layer=5)
