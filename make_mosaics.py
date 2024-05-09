@@ -35,7 +35,7 @@ def get_layer_cell_filename(
     layer=1,
     prefix=''
 ):
-    return f"{prefix}l{layer}x{scale_x}y{scale_y}-{base_x},{base_y}.jpg"
+    return f"{prefix}l{layer}x{scale_x}y{scale_y}_{base_x},{base_y}.jpg"
 
 def get_base_dimensions(
     input_path='./originals',
@@ -83,16 +83,19 @@ def make_layer_cell(
     resized_width = output_width // (scale_x ** layer)
     resized_height = output_height // (scale_y ** layer)
 
-    x_on_canvas = 0
     for x in range(
         max([min_x, base_x]),
         min([max_x + 1, base_x + (scale_x ** layer)])
     ):
-        y_on_canvas = (output_height - resized_height) if reverse_y else 0
         for y in range(
             max([min_y, base_y]),
             min([max_y + 1, base_y + (scale_y ** layer)])
         ):
+            x_on_canvas = (x - base_x) * resized_width
+            y_on_canvas = (y - base_y) * resized_height
+            if (reverse_y):
+                y_on_canvas = output_height - ((y - base_y) + 1) * resized_height
+
             try:
                 # get the file
                 source_file = Image.open(f"{input_path}/{get_source_filename(x, y)}")
@@ -102,11 +105,9 @@ def make_layer_cell(
 
                 # paste on canvas
                 result.paste(resized_file, (x_on_canvas, y_on_canvas))
-                y_on_canvas = y_on_canvas - resized_height if reverse_y else y_on_canvas + resized_height
             except FileNotFoundError:
+                print(f"File not found: {input_path}/{get_source_filename(x, y)}")
                 continue
-
-        x_on_canvas = x_on_canvas + resized_width
 
     # write result to disk; for now, assume the output layer exists
     layer_cell_filename = get_layer_cell_filename(base_x, base_y, scale_x, scale_y, layer)
@@ -149,6 +150,10 @@ def ensure_base_dimensions(
     output_height = 0,
     input_path = './originals'
 ):
+    """
+        Returns output_width and output_height. If initially provided as 0,
+        the variables are first set to the size of a sample tile
+    """
     if output_width == 0 or output_height == 0:
         base_dimensions = get_base_dimensions(input_path, '0,0.jpg')
         if (base_dimensions == None):
@@ -204,4 +209,5 @@ def make_layers(
         make_layer(input_path, output_path, scale_x, scale_y, layer, output_width, output_height, reverse_y)
 
 if __name__ == '__main__':
-    make_layer(layer=5)
+    make_layers()
+    # make_layer_cell(base_x=0, base_y=4, min_x=-2, max_x=6, min_y=-2, max_y=10)
