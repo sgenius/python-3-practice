@@ -35,7 +35,7 @@ def get_layer_cell_filename(
     layer=1,
     prefix=''
 ):
-    return f"{prefix}l{layer}x{scale_x}y{scale_y}_{base_x},{base_y}.jpg"
+    return f"{prefix}l{layer}x{scale_x}y{scale_y}__{base_x},{base_y}.jpg"
 
 def get_base_dimensions(
     input_path='./originals',
