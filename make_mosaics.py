@@ -101,7 +101,8 @@ def make_layer_cell(
                 source_file = Image.open(f"{input_path}/{get_source_filename(x, y)}")
 
                 # resize to right size as per scale
-                resized_file = source_file.resize((resized_width, resized_height), Image.BOX)
+                # see: https://pillow.readthedocs.io/en/latest/handbook/concepts.html#filters-comparison-table
+                resized_file = source_file.resize((resized_width, resized_height), Image.LANCZOS)
 
                 # paste on canvas
                 result.paste(resized_file, (x_on_canvas, y_on_canvas))
