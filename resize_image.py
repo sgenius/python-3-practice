@@ -8,7 +8,7 @@ def resize_image(input_image_path,
        Taken from:
        http://www.blog.pythonlibrary.org/2017/10/12/how-to-resize-a-photo-with-python/
     """
-    original_image = Image.open(input_image_path)    
+    original_image = Image.open(input_image_path)
     original_width, original_height = original_image.size
     print('The original image size is {wide} wide x {height} '
           'high'.format(wide=original_width, height=original_height))
