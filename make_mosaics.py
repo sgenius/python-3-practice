@@ -196,7 +196,7 @@ def make_layers(
     output_width=0,
     output_height=0,
     reverse_y=True,
-    min_layer=1,
+    min_layer=0,
     max_layer=6,
 ):
     """
@@ -205,9 +205,14 @@ def make_layers(
     # get output dimensions
     (output_width, output_height) = ensure_base_dimensions(output_width, output_height, input_path)
 
-    for layer in range(min_layer, max_layer):
+    for layer in range(max([0, min_layer]), max_layer):
         print(f"> Creating layer {layer}.")
         make_layer(input_path, output_path, scale_x, scale_y, layer, output_width, output_height, reverse_y)
+
+        # if layer == 0:
+        #     make_layer(input_path, output_path, 1, 1, layer, output_width, output_height)
+        # else:
+        #     make_layer(input_path, output_path, scale_x, scale_y, layer, output_width, output_height, reverse_y)
 
 if __name__ == '__main__':
     make_layers()
